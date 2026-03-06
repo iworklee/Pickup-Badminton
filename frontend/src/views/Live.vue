@@ -19,7 +19,7 @@
             <van-tag type="primary" size="medium">进行中</van-tag>
             <h3>当前比赛</h3>
           </div>
-          <div v-for="m in state.courtMatches" :key="m.id" class="court-card">
+          <div v-for="m in state.courtMatches" :key="`court-${m.courtIndex}-${m.id}`" class="court-card">
             <div class="court-header">
               <van-tag plain type="primary">场地 {{ m.courtIndex + 1 }}</van-tag>
               <van-button size="mini" type="primary" @click="openScore(m)">录入比分</van-button>
@@ -39,12 +39,28 @@
           <van-empty v-if="!state.courtMatches?.length" description="暂无进行中比赛" />
         </section>
 
+        <section v-if="state.recentResults?.length" class="section">
+          <div class="section-head">
+            <van-tag type="success" size="medium">最近录入</van-tag>
+            <h3>比分</h3>
+          </div>
+          <div v-for="(r, idx) in state.recentResults" :key="idx" class="result-row">
+            <span class="result-court">场地 {{ r.courtIndex + 1 }}</span>
+            <span class="result-teams">{{ teamNames(r.teamAPlayerIds) }} VS {{ teamNames(r.teamBPlayerIds) }}</span>
+            <span class="result-score">
+              <span :class="r.scoreA > r.scoreB ? 'score-win' : 'score-lose'">{{ r.scoreA }}</span>
+              <span class="score-sep">/</span>
+              <span :class="r.scoreB > r.scoreA ? 'score-win' : 'score-lose'">{{ r.scoreB }}</span>
+            </span>
+          </div>
+        </section>
+
         <section class="section">
           <div class="section-head">
             <van-tag color="#ff976a" size="medium">候场</van-tag>
             <h3>下一场</h3>
           </div>
-          <div v-if="state.nextUp" class="next-up">
+          <div v-if="state.nextUp" class="next-up" :key="nextUpKey">
             <div class="vs">
               <span class="team">{{ teamNames(state.nextUp.teamAPlayerIds) }}</span>
               <span class="vs-text">VS</span>
@@ -167,6 +183,11 @@ const playersById = computed(() => {
   (state.value?.players || []).forEach((p) => (map[p.id] = p));
   return map;
 });
+const nextUpKey = computed(() => {
+  const n = state.value?.nextUp;
+  if (!n) return "none";
+  return [n.teamAPlayerIds, n.teamBPlayerIds].flat().join("-");
+});
 
 function teamNames(ids) {
   if (!ids?.length || !playersById.value) return "-";
@@ -278,4 +299,11 @@ onUnmounted(() => {
 .sheet-btn-wrap { padding: 16px; }
 .score-dialog-body { padding: 8px 0; }
 .leave-list { max-height: 60vh; overflow: auto; }
+.result-row { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #fff; border-radius: 8px; margin-bottom: 8px; font-size: 13px; flex-wrap: wrap; }
+.result-court { color: var(--van-gray-6); min-width: 52px; }
+.result-teams { flex: 1; min-width: 0; color: var(--van-text-color); }
+.result-score { font-weight: 600; white-space: nowrap; }
+.score-win { color: #ee0a24; }
+.score-lose { color: #07c160; }
+.score-sep { color: var(--van-gray-5); margin: 0 2px; }
 </style>

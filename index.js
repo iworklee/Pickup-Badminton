@@ -22,16 +22,24 @@ async function getLiveState(activityId) {
   if (!activity) return null;
   const players = await ActivityPlayer.findAll({ where: { activityId }, order: [["createdAt", "ASC"]] });
   const courtMatches = await CourtMatch.findAll({ where: { activityId }, order: [["courtIndex", "ASC"]] });
-  const matchResults = await MatchResult.findAll({ where: { activityId }, order: [["id", "ASC"]] });
+  const matchResults = await MatchResult.findAll({ where: { activityId }, order: [["createdAt", "ASC"]] });
   const playerList = players.map((p) => p.toJSON());
   const nextUp = activity.status === "live" && activity.mode === "dynamic"
     ? computeNextMatch(playerList, courtMatches.map((m) => m.toJSON()), matchResults.map((r) => r.toJSON()), activity.handicapRules || [])
     : null;
+  const recentResults = [...matchResults].reverse().slice(0, 5).map((r) => ({
+    courtIndex: r.courtIndex,
+    teamAPlayerIds: r.teamAPlayerIds,
+    teamBPlayerIds: r.teamBPlayerIds,
+    scoreA: r.scoreA,
+    scoreB: r.scoreB,
+  }));
   return {
     activity: activity.toJSON(),
     players: playerList,
     courtMatches: courtMatches.map((m) => m.toJSON()),
     nextUp: nextUp ? { teamAPlayerIds: nextUp.teamAPlayerIds, teamBPlayerIds: nextUp.teamBPlayerIds, handicapTip: nextUp.handicapTip } : null,
+    recentResults,
   };
 }
 
