@@ -101,8 +101,9 @@ function isSameMatchup(teamA, teamB, oneResult) {
 
 /**
  * 核心：在候选池中 8 选 4，对每种 4 人组合尝试 3 种组队方式，取评分最高的对阵
+ * @param excludeMatchup - 可选，{ teamAPlayerIds, teamBPlayerIds }，排除与此相同的对阵（用于本场结束后预览）
  */
-function computeNextMatch(players, courtMatches, matchResults, handicapRules) {
+function computeNextMatch(players, courtMatches, matchResults, handicapRules, excludeMatchup) {
   const onCourtIds = getPlayerIdsOnCourt(courtMatches);
   const availablePlayers = (players || []).filter(
     (p) => p.status === "active" && !onCourtIds.has(p.id)
@@ -137,12 +138,15 @@ function computeNextMatch(players, courtMatches, matchResults, handicapRules) {
             { t1: [group[0], group[3]], t2: [group[1], group[2]] },
           ];
           for (const { t1, t2 } of matchups) {
+            const t1Ids = t1.map((p) => p.id);
+            const t2Ids = t2.map((p) => p.id);
+            if (excludeMatchup && isSameMatchup(t1Ids, t2Ids, excludeMatchup)) continue;
             const score = evaluateMatchup(t1, t2, hist, maxGames);
             if (score > bestScore) {
               bestScore = score;
               bestMatch = {
-                teamAPlayerIds: t1.map((p) => p.id),
-                teamBPlayerIds: t2.map((p) => p.id),
+                teamAPlayerIds: t1Ids,
+                teamBPlayerIds: t2Ids,
                 players: [...t1, ...t2],
               };
             }

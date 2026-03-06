@@ -220,23 +220,19 @@ Page({
     // 阻止点击弹窗内容时冒泡到 mask，避免误关
   },
 
-  closeAdd(e) {
-    if (e && e.target && e.target.id !== "maskAdd") return;
+  closeAdd() {
     this.setData({ showAddPlayer: false });
   },
 
-  closeScore(e) {
-    if (e && e.target && e.target.id !== "maskScore") return;
+  closeScore() {
     this.setData({ showScore: false });
   },
 
-  closeEditScore(e) {
-    if (e && e.target && e.target.id !== "maskEditScore") return;
+  closeEditScore() {
     this.setData({ showEditScore: false, editingResult: null });
   },
 
-  closeLeave(e) {
-    if (e && e.target && e.target.id !== "maskLeave") return;
+  closeLeave() {
     this.setData({ showLeave: false });
   },
 });

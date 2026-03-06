@@ -34,7 +34,10 @@ async function getLiveState(activityId) {
   let nextUpIsPreview = false;
   const activePlayerCount = playerList.filter((p) => p.status === "active").length;
   if (!nextUp && activity.status === "live" && activity.mode === "dynamic" && activePlayerCount >= 4 && courtMatchesData.length > 0) {
-    nextUp = computeNextMatch(playerList, [], matchResultsData, activity.handicapRules || []);
+    const excludeMatchup = courtMatchesData[0]
+      ? { teamAPlayerIds: courtMatchesData[0].teamAPlayerIds, teamBPlayerIds: courtMatchesData[0].teamBPlayerIds }
+      : null;
+    nextUp = computeNextMatch(playerList, [], matchResultsData, activity.handicapRules || [], excludeMatchup);
     if (nextUp) nextUpIsPreview = true;
   }
   const recentResults = [...matchResults].reverse().slice(0, 5).map((r) => ({
