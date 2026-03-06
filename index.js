@@ -42,12 +42,18 @@ function broadcastLive(activityId, payload) {
   room.forEach((ws) => { try { ws.send(data); } catch (e) {} });
 }
 
-const distIndex = path.join(__dirname, "dist", "index.html");
+// 优先使用前端构建产物：根目录 dist（pnpm run build 产出）或 frontend/dist
+const distRoot =
+  fs.existsSync(path.join(__dirname, "dist", "index.html"))
+    ? path.join(__dirname, "dist")
+    : fs.existsSync(path.join(__dirname, "frontend", "dist", "index.html"))
+      ? path.join(__dirname, "frontend", "dist")
+      : null;
 app.get("/", (req, res) => {
-  if (fs.existsSync(distIndex)) return res.sendFile(distIndex);
+  if (distRoot) return res.sendFile(path.join(distRoot, "index.html"));
   res.sendFile(path.join(__dirname, "index.html"));
 });
-app.use(express.static(path.join(__dirname, "dist")));
+if (distRoot) app.use(express.static(distRoot));
 
 app.post("/api/activities", async (req, res) => {
   try {
