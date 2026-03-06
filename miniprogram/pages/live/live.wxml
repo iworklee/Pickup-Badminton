@@ -1,0 +1,174 @@
+<view class="live-page">
+  <view class="nav-bar">
+    <view class="nav-left" bindtap="goBack">返回</view>
+    <text class="nav-title">{{state.activity.title || '实时看板'}}</text>
+    <view class="nav-right" bindtap="goLeaderboard">排行榜</view>
+  </view>
+
+  <block wx:if="{{state}}">
+    <view class="stats-bar">
+      <text>选手 {{state.matchStats.activePlayerCount}} 人</text>
+      <text>场地 {{state.matchStats.courtCount}} 个</text>
+      <text>已打 {{state.matchStats.playedCount}} 场</text>
+      <text class="stats-remaining">剩余 {{state.matchStats.remainingMatchesEstimate}} 场</text>
+    </view>
+
+    <view class="section">
+      <view class="section-head">
+        <text class="tag tag-primary">进行中</text>
+        <text class="section-title">当前比赛</text>
+      </view>
+      <view wx:for="{{state.courtMatches}}" wx:key="id" class="court-card">
+        <view class="court-header">
+          <text class="tag tag-plain">场地 {{item.courtIndex + 1}}</text>
+          <button class="btn-mini" data-index="{{index}}" bindtap="openScore">录入比分</button>
+        </view>
+        <view class="vs">
+          <view class="team-wrap">
+            <text class="team-label team-a">A队</text>
+            <text class="team">{{item.teamANames}}</text>
+          </view>
+          <text class="vs-text">VS</text>
+          <view class="team-wrap">
+            <text class="team-label team-b">B队</text>
+            <text class="team">{{item.teamBNames}}</text>
+          </view>
+        </view>
+        <view wx:if="{{item.handicapTip}}" class="handicap">
+          <text class="tag tag-danger">{{item.handicapTip}}</text>
+        </view>
+        <button class="btn-end" data-index="{{index}}" bindtap="endCourt">结束本局</button>
+      </view>
+      <view wx:if="{{!state.courtMatches.length}}" class="empty">暂无进行中比赛</view>
+    </view>
+
+    <view wx:if="{{state.recentResults.length}}" class="section">
+      <view class="section-head">
+        <text class="tag tag-success">最近录入</text>
+        <text class="section-title">比分</text>
+      </view>
+      <view wx:for="{{state.recentResults}}" wx:key="id" class="result-row">
+        <text class="result-court">场地 {{item.courtIndex + 1}}</text>
+        <text class="result-teams">A {{item.teamANames}} VS B {{item.teamBNames}}</text>
+        <text class="result-score">
+          <text class="{{item.scoreA > item.scoreB ? 'score-win' : 'score-lose'}}">{{item.scoreA}}</text>
+          <text class="score-sep">/</text>
+          <text class="{{item.scoreB > item.scoreA ? 'score-win' : 'score-lose'}}">{{item.scoreB}}</text>
+        </text>
+        <button class="btn-edit" data-index="{{index}}" bindtap="openEditResult">修改</button>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-head">
+        <text class="tag tag-orange">候场</text>
+        <text class="section-title">下一场</text>
+      </view>
+      <view wx:if="{{state.nextUp}}" class="next-up">
+        <view class="vs">
+          <view class="team-wrap">
+            <text class="team-label team-a">A队</text>
+            <text class="team">{{state.nextUp.teamANames}}</text>
+          </view>
+          <text class="vs-text">VS</text>
+          <view class="team-wrap">
+            <text class="team-label team-b">B队</text>
+            <text class="team">{{state.nextUp.teamBNames}}</text>
+          </view>
+        </view>
+        <view wx:if="{{state.nextUp.handicapTip}}" class="handicap">
+          <text class="tag tag-danger">{{state.nextUp.handicapTip}}</text>
+        </view>
+      </view>
+      <view wx:else class="empty">人数不足或暂无下一场</view>
+    </view>
+  </block>
+
+  <view wx:else class="loading-wrap">
+    <text>加载中...</text>
+  </view>
+
+  <!-- 添加选手 -->
+  <view class="fab">
+    <button class="fab-main" bindtap="showAdd">添加选手</button>
+    <button class="fab-sub" bindtap="showLeaveList">选手早退</button>
+  </view>
+
+  <view wx:if="{{showAddPlayer}}" class="mask" bindtap="closeAdd">
+    <view class="sheet" catchtap="">
+      <view class="sheet-title">添加选手（中途加入）</view>
+      <view class="sheet-form">
+        <view class="form-cell">
+          <text class="form-label">姓名</text>
+          <input class="form-input" value="{{newPlayer.name}}" placeholder="请输入姓名" bindinput="onNewPlayerName" />
+        </view>
+        <view class="form-cell">
+          <text class="form-label">性别</text>
+          <radio-group bindchange="onNewPlayerGender">
+            <label><radio value="M" checked="{{newPlayer.gender === 'M'}}"/> 男</label>
+            <label><radio value="F" checked="{{newPlayer.gender === 'F'}}"/> 女</label>
+          </radio-group>
+        </view>
+      </view>
+      <button class="sheet-btn" bindtap="addPlayer">确认加入</button>
+    </view>
+  </view>
+
+  <!-- 录入比分 -->
+  <view wx:if="{{showScore && currentCourt}}" class="mask" bindtap="closeScore">
+    <view class="dialog" catchtap="">
+      <view class="dialog-title">场地 {{currentCourt.courtIndex + 1}} - 录入比分</view>
+      <view class="dialog-body">
+        <view class="form-cell">
+          <text class="form-label">A 队得分</text>
+          <input type="number" class="form-input num" value="{{scoreForm.scoreA}}" bindinput="onScoreAInput" />
+        </view>
+        <view class="form-cell">
+          <text class="form-label">B 队得分</text>
+          <input type="number" class="form-input num" value="{{scoreForm.scoreB}}" bindinput="onScoreBInput" />
+        </view>
+      </view>
+      <view class="dialog-actions">
+        <button bindtap="closeScore">取消</button>
+        <button class="primary" bindtap="submitScore">提交</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 修改比分 -->
+  <view wx:if="{{showEditScore}}" class="mask" bindtap="closeEditScore">
+    <view class="dialog" catchtap="">
+      <view class="dialog-title">修改比分</view>
+      <view class="dialog-body">
+        <view class="form-cell">
+          <text class="form-label">A 队得分</text>
+          <input type="number" class="form-input num" value="{{editScoreForm.scoreA}}" bindinput="onEditScoreAInput" />
+        </view>
+        <view class="form-cell">
+          <text class="form-label">B 队得分</text>
+          <input type="number" class="form-input num" value="{{editScoreForm.scoreB}}" bindinput="onEditScoreBInput" />
+        </view>
+      </view>
+      <view class="dialog-actions">
+        <button bindtap="closeEditScore">取消</button>
+        <button class="primary" bindtap="submitEditScore">保存</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 选手早退 -->
+  <view wx:if="{{showLeave}}" class="mask" bindtap="closeLeave">
+    <view class="sheet sheet-tall" catchtap="">
+      <view class="sheet-title">选手早退</view>
+      <scroll-view scroll-y class="leave-list">
+        <block wx:for="{{state ? state.players : []}}" wx:key="id">
+          <view wx:if="{{item.status === 'active'}}" class="leave-item" data-player-id="{{item.id}}" data-player-name="{{item.name}}" bindtap="setLeave">
+            <text>{{item.name}}</text>
+            <text class="leave-gender">{{item.gender === 'M' ? '男' : '女'}}</text>
+          </view>
+        </block>
+        <view wx:if="{{state && !state.players.length}}" class="empty">暂无在场选手</view>
+      </scroll-view>
+    </view>
+  </view>
+</view>

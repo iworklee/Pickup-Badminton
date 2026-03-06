@@ -1,0 +1,60 @@
+<view class="create-page">
+  <view class="card-group">
+    <view class="cell">
+      <text class="label">标题</text>
+      <input class="input" value="{{title}}" placeholder="输入活动名称" bindinput="onTitleInput" />
+    </view>
+    <view class="cell">
+      <text class="label">日期</text>
+      <picker mode="date" value="{{date}}" start="2020-01-01" end="2030-12-31" bindchange="onDateChange">
+        <view class="picker">{{date || '选择日期'}}</view>
+      </picker>
+    </view>
+    <view class="cell row">
+      <text class="label">场地数量</text>
+      <view class="stepper">
+        <button class="stepper-btn" disabled="{{courtCount <= 1}}" bindtap="onCourtChange" data-val="{{courtCount - 1}}">-</button>
+        <text class="stepper-num">{{courtCount}}</text>
+        <button class="stepper-btn" disabled="{{courtCount >= 10}}" bindtap="onCourtChange" data-val="{{courtCount + 1}}">+</button>
+      </view>
+    </view>
+    <view class="cell">
+      <text class="label">模式</text>
+      <radio-group class="mode-radio" bindchange="onModeChange">
+        <label><radio value="fixed" checked="{{mode === 'fixed'}}"/> 固定场次</label>
+        <label><radio value="dynamic" checked="{{mode === 'dynamic'}}"/> 动态轮转 推荐</label>
+      </radio-group>
+    </view>
+  </view>
+
+  <view class="divider">初始选手</view>
+  <view class="card-group">
+    <textarea class="paste-field" value="{{pasteText}}" placeholder="支持微信群接龙粘贴&#10;每行格式：姓名 男/女&#10;例：张三 男&#10;李四 女" bindinput="onPasteInput" />
+    <button class="parse-btn" bindtap="parsePaste">解析并填入下方名单</button>
+  </view>
+
+  <view class="card-group">
+    <view class="card-title">选手名单</view>
+    <block wx:for="{{players}}" wx:key="index">
+      <view class="player-row">
+        <input class="player-name" value="{{item.name}}" placeholder="姓名" data-i="{{index}}" bindinput="onPlayerNameInput" />
+        <radio-group class="gender-radio" data-i="{{index}}" bindchange="onPlayerGenderChange">
+          <label><radio value="M" checked="{{item.gender === 'M'}}"/> 男</label>
+          <label><radio value="F" checked="{{item.gender === 'F'}}"/> 女</label>
+        </radio-group>
+        <button class="del-btn" data-i="{{index}}" bindtap="deletePlayer">删除</button>
+      </view>
+    </block>
+    <view class="add-row" bindtap="addPlayer">+ 添加选手</view>
+  </view>
+
+  <view class="divider">让分规则（可选）</view>
+  <view class="card-group">
+    <view class="cell">
+      <text class="label">男双让混双</text>
+      <input class="input digit" type="digit" value="{{handicapPoints}}" placeholder="不填则不让分" bindinput="onHandicapInput" />
+    </view>
+  </view>
+
+  <button class="submit-btn" bindtap="submit" loading="{{loading}}">开始活动</button>
+</view>

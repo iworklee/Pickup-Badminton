@@ -1,0 +1,29 @@
+# 依赖
+node_modules
+
+# 构建产物
+dist
+
+# 环境与密钥
+.env
+.env.*
+!.env.example
+
+# 日志与临时
+*.log
+logs
+
+# 系统与 IDE
+.DS_Store
+.cursor
+.vscode
+*.suo
+*.sublime-*
+
+# 微信开发者工具
+project.private.config.json
+
+# 调试与测试
+coverage
+.nyc_output
+*.tgz

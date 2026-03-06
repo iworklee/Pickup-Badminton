@@ -1,0 +1,12 @@
+<view class="index-page">
+  <view class="header">
+    <text class="title">路人羽球</text>
+    <text class="desc">创建或进入活动，实时看板与排行榜</text>
+  </view>
+  <view class="actions">
+    <button class="btn-primary" bindtap="goCreate">创建活动</button>
+    <view class="divider">或进入已有活动</view>
+    <input class="input" placeholder="输入活动 ID" value="{{activityId}}" bindinput="onActivityIdInput" />
+    <button class="btn-secondary" bindtap="goLive">进入看板</button>
+  </view>
+</view>

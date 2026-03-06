@@ -1,0 +1,37 @@
+<view class="leaderboard-page">
+  <block wx:if="{{data}}">
+    <view class="section">
+      <view class="section-head">
+        <text class="tag tag-primary">个人战绩</text>
+        <text class="section-desc">按胜率、净胜分排序</text>
+      </view>
+      <view class="card-group">
+        <view wx:for="{{data.leaderboard}}" wx:key="id" class="leader-row">
+          <view class="rank-badge {{index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : ''}}">{{index + 1}}</view>
+          <view class="leader-info">
+            <text class="leader-name">{{item.name}}</text>
+            <text class="leader-desc">出场 {{item.playCount}} 场 · 胜率 {{item.winRateText}}% · 净胜 {{item.pointDiffText}}</text>
+          </view>
+        </view>
+        <view wx:if="{{!data.leaderboard.length}}" class="empty">暂无数据</view>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-head">
+        <text class="tag tag-success">搭档胜率</text>
+      </view>
+      <view class="card-group">
+        <view wx:for="{{data.partnerWins}}" wx:key="index" class="partner-row">
+          <text class="partner-names">{{item.name1}} / {{item.name2}}</text>
+          <text class="partner-desc">{{item.wins}}/{{item.total}} 场 · 胜率 {{item.winRateText}}%</text>
+        </view>
+        <view wx:if="{{!data.partnerWins.length}}" class="empty">暂无搭档数据</view>
+      </view>
+    </view>
+  </block>
+
+  <view wx:else class="loading-wrap">
+    <text>加载中...</text>
+  </view>
+</view>

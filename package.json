@@ -1,12 +1,11 @@
 {
-  "name": "wxcloudrun-express",
+  "name": "pickup-badminton",
   "version": "1.0.0",
-  "description": "微信云托管 express 框架模版",
-  "main": "index.js",
+  "description": "路人羽球 - 云托管后端 + H5/小程序前端",
+  "main": "server/app.js",
   "scripts": {
-    "start": "node index.js",
-    "build": "cd frontend && pnpm install && pnpm build",
-    "dev:frontend": "cd frontend && pnpm dev"
+    "start": "node server/app.js",
+    "dev": "node server/app.js"
   },
   "author": "",
   "license": "Apache-2.0",
@@ -19,7 +18,7 @@
     "ws": "^8.14.2"
   },
   "engines": {
-    "node": ">=12.0.0"
+    "node": ">=18.0.0"
   },
   "packageManager": "pnpm@10.12.1+sha512.f0dda8580f0ee9481c5c79a1d927b9164f2c478e90992ad268bbb2465a736984391d6333d2c327913578b2804af33474ca554ba29c04a8b13060a717675ae3ac"
 }

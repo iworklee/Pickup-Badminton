@@ -1,0 +1,130 @@
+.create-page {
+  padding-bottom: 80rpx;
+  min-height: 100vh;
+  background: #f7f8fa;
+}
+.card-group {
+  margin: 24rpx;
+  background: #fff;
+  border-radius: 16rpx;
+  overflow: hidden;
+  padding: 24rpx;
+}
+.cell {
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #ebedf0;
+}
+.cell:last-child {
+  border-bottom: none;
+}
+.cell.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.label {
+  font-size: 28rpx;
+  color: #323233;
+  margin-right: 16rpx;
+}
+.input {
+  flex: 1;
+  font-size: 28rpx;
+}
+.picker {
+  font-size: 28rpx;
+  color: #323233;
+}
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+}
+.stepper-btn {
+  width: 56rpx;
+  height: 56rpx;
+  line-height: 56rpx;
+  padding: 0;
+  font-size: 32rpx;
+  border: 1rpx solid #dcdee0;
+  border-radius: 8rpx;
+}
+.stepper-num {
+  min-width: 48rpx;
+  text-align: center;
+  font-size: 28rpx;
+}
+.mode-radio {
+  display: flex;
+  gap: 32rpx;
+  font-size: 28rpx;
+}
+.mode-radio label {
+  display: flex;
+  align-items: center;
+}
+.divider {
+  padding: 16rpx 24rpx;
+  font-size: 28rpx;
+  color: #646566;
+}
+.paste-field {
+  width: 100%;
+  min-height: 160rpx;
+  font-size: 26rpx;
+  box-sizing: border-box;
+}
+.parse-btn {
+  margin-top: 16rpx;
+  font-size: 26rpx;
+  color: #1989fa;
+  background: none;
+}
+.card-title {
+  padding-bottom: 16rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+.player-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #ebedf0;
+}
+.player-name {
+  flex: 1;
+  min-width: 120rpx;
+  font-size: 28rpx;
+}
+.gender-radio {
+  display: flex;
+  gap: 16rpx;
+  font-size: 26rpx;
+}
+.gender-radio label {
+  display: flex;
+  align-items: center;
+}
+.del-btn {
+  padding: 8rpx 20rpx;
+  font-size: 24rpx;
+  color: #ee0a24;
+  background: none;
+}
+.add-row {
+  padding: 24rpx 0;
+  text-align: center;
+  font-size: 28rpx;
+  color: #1989fa;
+}
+.digit {
+  text-align: right;
+}
+.submit-btn {
+  margin: 48rpx 24rpx;
+  background: #1989fa;
+  color: #fff;
+  border-radius: 48rpx;
+}

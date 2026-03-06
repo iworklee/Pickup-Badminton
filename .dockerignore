@@ -1,6 +1,5 @@
 # 依赖目录不拷贝，在镜像内重新安装
 node_modules
-frontend/node_modules
 
 # 版本控制与 IDE
 .git
@@ -20,6 +19,9 @@ doc
 
 # 构建产物在镜像内重新生成，避免使用宿主机旧 dist
 dist
+
+# 小程序源码仅本地/开发者工具使用，不参与云托管镜像
+miniprogram
 
 # 其他
 *.log
