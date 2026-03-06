@@ -1,0 +1,26 @@
+# 依赖目录不拷贝，在镜像内重新安装
+node_modules
+frontend/node_modules
+
+# 版本控制与 IDE
+.git
+.gitignore
+.cursor
+.vscode
+*.md
+LICENSE
+
+# 文档与无关文件
+doc
+
+# 本地环境
+.env
+.env.*
+!.env.example
+
+# 构建产物在镜像内重新生成，避免使用宿主机旧 dist
+dist
+
+# 其他
+*.log
+.DS_Store
