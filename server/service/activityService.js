@@ -26,9 +26,17 @@ async function getLiveState(activityId) {
   const courtMatches = await CourtMatch.findAll({ where: { activityId }, order: [["courtIndex", "ASC"]] });
   const matchResults = await MatchResult.findAll({ where: { activityId }, order: [["createdAt", "ASC"]] });
   const playerList = players.map((p) => p.toJSON());
-  const nextUp = activity.status === "live" && activity.mode === "dynamic"
-    ? computeNextMatch(playerList, courtMatches.map((m) => m.toJSON()), matchResults.map((r) => r.toJSON()), activity.handicapRules || [])
+  const courtMatchesData = courtMatches.map((m) => m.toJSON());
+  const matchResultsData = matchResults.map((r) => r.toJSON());
+  let nextUp = activity.status === "live" && activity.mode === "dynamic"
+    ? computeNextMatch(playerList, courtMatchesData, matchResultsData, activity.handicapRules || [])
     : null;
+  let nextUpIsPreview = false;
+  const activePlayerCount = playerList.filter((p) => p.status === "active").length;
+  if (!nextUp && activity.status === "live" && activity.mode === "dynamic" && activePlayerCount >= 4 && courtMatchesData.length > 0) {
+    nextUp = computeNextMatch(playerList, [], matchResultsData, activity.handicapRules || []);
+    if (nextUp) nextUpIsPreview = true;
+  }
   const recentResults = [...matchResults].reverse().slice(0, 5).map((r) => ({
     id: r.id,
     courtIndex: r.courtIndex,
@@ -37,7 +45,6 @@ async function getLiveState(activityId) {
     scoreA: r.scoreA,
     scoreB: r.scoreB,
   }));
-  const activePlayerCount = playerList.filter((p) => p.status === "active").length;
   const playedCount = distinctMatchCount(matchResults);
   const courtCount = activity.courtCount || 1;
   const totalMatchesEstimate = courtCount * Math.ceil(activePlayerCount / 4) * 2;
@@ -46,7 +53,7 @@ async function getLiveState(activityId) {
     activity: activity.toJSON(),
     players: playerList,
     courtMatches: courtMatches.map((m) => m.toJSON()),
-    nextUp: nextUp ? { teamAPlayerIds: nextUp.teamAPlayerIds, teamBPlayerIds: nextUp.teamBPlayerIds, handicapTip: nextUp.handicapTip } : null,
+    nextUp: nextUp ? { teamAPlayerIds: nextUp.teamAPlayerIds, teamBPlayerIds: nextUp.teamBPlayerIds, handicapTip: nextUp.handicapTip, nextUpIsPreview } : null,
     recentResults,
     matchStats: { totalMatchesEstimate, playedCount, remainingMatchesEstimate, activePlayerCount, courtCount },
   };

@@ -62,7 +62,7 @@
     <view class="section">
       <view class="section-head">
         <text class="tag tag-orange">候场</text>
-        <text class="section-title">下一场</text>
+        <text class="section-title">下一场{{state.nextUp && state.nextUp.nextUpIsPreview ? '（本场结束后）' : ''}}</text>
       </view>
       <view wx:if="{{state.nextUp}}" class="next-up">
         <view class="vs">

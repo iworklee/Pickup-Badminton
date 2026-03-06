@@ -23,6 +23,9 @@ function buildHistory(matchResults, courtMatches) {
   };
   const applyMatch = (teamA, teamB) => {
     if (!teamA?.length || !teamB?.length) return;
+    [...teamA, ...teamB].forEach((pid) => {
+      if (!history[pid]) history[pid] = { partners: {}, opponents: {} };
+    });
     for (let i = 0; i < teamA.length; i++) {
       for (let j = i + 1; j < teamA.length; j++) {
         const a = teamA[i];
