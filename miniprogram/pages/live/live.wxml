@@ -94,8 +94,8 @@
     <button class="fab-sub" bindtap="showLeaveList">选手早退</button>
   </view>
 
-  <view wx:if="{{showAddPlayer}}" class="mask" bindtap="closeAdd">
-    <view class="sheet" catchtap="">
+  <view wx:if="{{showAddPlayer}}" id="maskAdd" class="mask" bindtap="closeAdd">
+    <view class="sheet" catchtap="preventClose" catchtouchmove="preventClose">
       <view class="sheet-title">添加选手（中途加入）</view>
       <view class="sheet-form">
         <view class="form-cell">
@@ -115,17 +115,17 @@
   </view>
 
   <!-- 录入比分 -->
-  <view wx:if="{{showScore && currentCourt}}" class="mask" bindtap="closeScore">
-    <view class="dialog" catchtap="">
+  <view wx:if="{{showScore && currentCourt}}" id="maskScore" class="mask" bindtap="closeScore">
+    <view class="dialog" catchtap="preventClose" catchtouchmove="preventClose">
       <view class="dialog-title">场地 {{currentCourt.courtIndex + 1}} - 录入比分</view>
       <view class="dialog-body">
         <view class="form-cell">
           <text class="form-label">A 队得分</text>
-          <input type="number" class="form-input num" value="{{scoreForm.scoreA}}" bindinput="onScoreAInput" />
+          <input type="digit" class="form-input num" value="{{scoreForm.scoreA}}" placeholder="0" placeholder-class="input-placeholder" bindinput="onScoreAInput" />
         </view>
         <view class="form-cell">
           <text class="form-label">B 队得分</text>
-          <input type="number" class="form-input num" value="{{scoreForm.scoreB}}" bindinput="onScoreBInput" />
+          <input type="digit" class="form-input num" value="{{scoreForm.scoreB}}" placeholder="0" placeholder-class="input-placeholder" bindinput="onScoreBInput" />
         </view>
       </view>
       <view class="dialog-actions">
@@ -136,17 +136,17 @@
   </view>
 
   <!-- 修改比分 -->
-  <view wx:if="{{showEditScore}}" class="mask" bindtap="closeEditScore">
-    <view class="dialog" catchtap="">
+  <view wx:if="{{showEditScore}}" id="maskEditScore" class="mask" bindtap="closeEditScore">
+    <view class="dialog" catchtap="preventClose" catchtouchmove="preventClose">
       <view class="dialog-title">修改比分</view>
       <view class="dialog-body">
         <view class="form-cell">
           <text class="form-label">A 队得分</text>
-          <input type="number" class="form-input num" value="{{editScoreForm.scoreA}}" bindinput="onEditScoreAInput" />
+          <input type="digit" class="form-input num" value="{{editScoreForm.scoreA}}" placeholder="0" placeholder-class="input-placeholder" bindinput="onEditScoreAInput" />
         </view>
         <view class="form-cell">
           <text class="form-label">B 队得分</text>
-          <input type="number" class="form-input num" value="{{editScoreForm.scoreB}}" bindinput="onEditScoreBInput" />
+          <input type="digit" class="form-input num" value="{{editScoreForm.scoreB}}" placeholder="0" placeholder-class="input-placeholder" bindinput="onEditScoreBInput" />
         </view>
       </view>
       <view class="dialog-actions">
@@ -157,8 +157,8 @@
   </view>
 
   <!-- 选手早退 -->
-  <view wx:if="{{showLeave}}" class="mask" bindtap="closeLeave">
-    <view class="sheet sheet-tall" catchtap="">
+  <view wx:if="{{showLeave}}" id="maskLeave" class="mask" bindtap="closeLeave">
+    <view class="sheet sheet-tall" catchtap="preventClose" catchtouchmove="preventClose">
       <view class="sheet-title">选手早退</view>
       <scroll-view scroll-y class="leave-list">
         <block wx:for="{{state ? state.players : []}}" wx:key="id">

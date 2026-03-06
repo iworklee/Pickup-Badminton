@@ -1,6 +1,23 @@
 const { Activity, ActivityPlayer, CourtMatch, MatchResult } = require("../model/db");
 const { uuid } = require("../model/db");
-const { computeNextMatch, getHandicapTip } = require("../utils/scheduler");
+const { computeNextMatch, getHandicapTip, isSameMatchup } = require("../utils/scheduler");
+
+function distinctMatchCount(matchResults) {
+  const list = matchResults || [];
+  let count = 0;
+  for (let i = 0; i < list.length; i++) {
+    const cur = list[i];
+    let duplicate = false;
+    for (let j = 0; j < i; j++) {
+      if (isSameMatchup(cur.teamAPlayerIds, cur.teamBPlayerIds, list[j])) {
+        duplicate = true;
+        break;
+      }
+    }
+    if (!duplicate) count += 1;
+  }
+  return count;
+}
 
 async function getLiveState(activityId) {
   const activity = await Activity.findByPk(activityId);
@@ -21,9 +38,9 @@ async function getLiveState(activityId) {
     scoreB: r.scoreB,
   }));
   const activePlayerCount = playerList.filter((p) => p.status === "active").length;
-  const playedCount = matchResults.length;
+  const playedCount = distinctMatchCount(matchResults);
   const courtCount = activity.courtCount || 1;
-  const totalMatchesEstimate = courtCount * Math.max(1, Math.floor(activePlayerCount / 4)) * 2;
+  const totalMatchesEstimate = courtCount * Math.ceil(activePlayerCount / 4) * 2;
   const remainingMatchesEstimate = Math.max(0, totalMatchesEstimate - playedCount);
   return {
     activity: activity.toJSON(),

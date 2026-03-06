@@ -100,7 +100,7 @@ Page({
       return;
     }
     const courtCount = Math.max(1, parseInt(this.data.courtCount, 10) || 1);
-    const totalEst = courtCount * Math.max(1, Math.floor(valid / 4)) * 2;
+    const totalEst = courtCount * Math.ceil(valid / 4) * 2;
     const ok = await new Promise((resolve) => {
       wx.showModal({
         title: "开始活动",

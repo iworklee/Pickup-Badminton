@@ -37,8 +37,8 @@ Page({
     showEditScore: false,
     showLeave: false,
     newPlayer: { name: "", gender: "M" },
-    scoreForm: { scoreA: 0, scoreB: 0 },
-    editScoreForm: { scoreA: 0, scoreB: 0 },
+    scoreForm: { scoreA: "", scoreB: "" },
+    editScoreForm: { scoreA: "", scoreB: "" },
     currentCourt: null,
     editingResult: null,
   },
@@ -93,25 +93,26 @@ Page({
     if (!m) return;
     this.setData({
       currentCourt: m,
-      scoreForm: { scoreA: 0, scoreB: 0 },
+      scoreForm: { scoreA: "", scoreB: "" },
       showScore: true,
     });
   },
 
   onScoreAInput(e) {
-    const v = parseInt(e.detail.value, 10);
-    this.setData({ "scoreForm.scoreA": isNaN(v) ? 0 : Math.max(0, Math.min(99, v)) });
+    const raw = (e.detail.value || "").replace(/\D/g, "").slice(0, 2);
+    this.setData({ "scoreForm.scoreA": raw });
   },
 
   onScoreBInput(e) {
-    const v = parseInt(e.detail.value, 10);
-    this.setData({ "scoreForm.scoreB": isNaN(v) ? 0 : Math.max(0, Math.min(99, v)) });
+    const raw = (e.detail.value || "").replace(/\D/g, "").slice(0, 2);
+    this.setData({ "scoreForm.scoreB": raw });
   },
 
   async submitScore() {
     const court = this.data.currentCourt;
     if (!court) return;
-    const { scoreA, scoreB } = this.data.scoreForm;
+    const scoreA = parseInt(this.data.scoreForm.scoreA, 10) || 0;
+    const scoreB = parseInt(this.data.scoreForm.scoreB, 10) || 0;
     try {
       const raw = await api.submitScore(this.data.id, court.courtIndex, scoreA, scoreB);
       this.setData({ state: enrichState(raw), showScore: false });
@@ -140,25 +141,26 @@ Page({
     if (!r || !r.id) return;
     this.setData({
       editingResult: r,
-      editScoreForm: { scoreA: r.scoreA ?? 0, scoreB: r.scoreB ?? 0 },
+      editScoreForm: { scoreA: String(r.scoreA ?? 0), scoreB: String(r.scoreB ?? 0) },
       showEditScore: true,
     });
   },
 
   onEditScoreAInput(e) {
-    const v = parseInt(e.detail.value, 10);
-    this.setData({ "editScoreForm.scoreA": isNaN(v) ? 0 : Math.max(0, Math.min(99, v)) });
+    const raw = (e.detail.value || "").replace(/\D/g, "").slice(0, 2);
+    this.setData({ "editScoreForm.scoreA": raw });
   },
 
   onEditScoreBInput(e) {
-    const v = parseInt(e.detail.value, 10);
-    this.setData({ "editScoreForm.scoreB": isNaN(v) ? 0 : Math.max(0, Math.min(99, v)) });
+    const raw = (e.detail.value || "").replace(/\D/g, "").slice(0, 2);
+    this.setData({ "editScoreForm.scoreB": raw });
   },
 
   async submitEditScore() {
     const r = this.data.editingResult;
     if (!r || !r.id) return;
-    const { scoreA, scoreB } = this.data.editScoreForm;
+    const scoreA = parseInt(this.data.editScoreForm.scoreA, 10) || 0;
+    const scoreB = parseInt(this.data.editScoreForm.scoreB, 10) || 0;
     try {
       const raw = await api.updateResult(this.data.id, r.id, scoreA, scoreB);
       this.setData({ state: enrichState(raw), showEditScore: false, editingResult: null });
@@ -214,19 +216,27 @@ Page({
     this.setData({ showLeave: true });
   },
 
-  closeAdd() {
+  preventClose() {
+    // 阻止点击弹窗内容时冒泡到 mask，避免误关
+  },
+
+  closeAdd(e) {
+    if (e && e.target && e.target.id !== "maskAdd") return;
     this.setData({ showAddPlayer: false });
   },
 
-  closeScore() {
+  closeScore(e) {
+    if (e && e.target && e.target.id !== "maskScore") return;
     this.setData({ showScore: false });
   },
 
-  closeEditScore() {
+  closeEditScore(e) {
+    if (e && e.target && e.target.id !== "maskEditScore") return;
     this.setData({ showEditScore: false, editingResult: null });
   },
 
-  closeLeave() {
+  closeLeave(e) {
+    if (e && e.target && e.target.id !== "maskLeave") return;
     this.setData({ showLeave: false });
   },
 });

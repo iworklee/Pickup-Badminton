@@ -209,6 +209,7 @@
 .form-label { font-size: 28rpx; min-width: 140rpx; }
 .form-input { flex: 1; font-size: 28rpx; }
 .form-input.num { text-align: right; }
+.input-placeholder { color: #c8c9cc; }
 .dialog {
   width: 90%;
   max-width: 600rpx;

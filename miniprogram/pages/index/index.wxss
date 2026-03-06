@@ -40,8 +40,11 @@
 }
 .input {
   width: 100%;
-  padding: 24rpx;
+  height: 88rpx;
+  min-height: 88rpx;
+  padding: 0 24rpx;
   font-size: 28rpx;
+  line-height: 88rpx;
   background: #f7f8fa;
   border-radius: 16rpx;
   box-sizing: border-box;
