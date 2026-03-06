@@ -1,47 +1,67 @@
 <template>
   <div class="live-page">
-    <van-nav-bar :title="state?.activity?.title || '实时看板'" left-arrow @click-left="goBack">
+    <van-nav-bar
+      :title="state?.activity?.title || '实时看板'"
+      left-arrow
+      fixed
+      placeholder
+      @click-left="goBack"
+    >
       <template #right>
-        <van-button size="small" type="primary" plain @click="goLeaderboard">排行榜</van-button>
+        <van-button size="small" type="primary" plain round @click="goLeaderboard">排行榜</van-button>
       </template>
     </van-nav-bar>
 
     <template v-if="state">
-      <section class="section">
-        <h3>进行中的比赛</h3>
-        <div v-for="m in state.courtMatches" :key="m.id" class="court-card">
-          <div class="court-title">场地 {{ m.courtIndex + 1 }}</div>
-          <div class="vs">
-            <span class="team">{{ teamNames(m.teamAPlayerIds) }}</span>
-            <span class="vs-text">VS</span>
-            <span class="team">{{ teamNames(m.teamBPlayerIds) }}</span>
+      <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
+        <section class="section">
+          <div class="section-head">
+            <van-tag type="primary" size="medium">进行中</van-tag>
+            <h3>当前比赛</h3>
           </div>
-          <div v-if="m.handicapTip" class="handicap">{{ m.handicapTip }}</div>
-          <div class="actions">
-            <van-button size="small" type="primary" @click="openScore(m)">录入比分</van-button>
-            <van-button size="small" plain @click="onEndCourt(m)">结束本局</van-button>
+          <div v-for="m in state.courtMatches" :key="m.id" class="court-card">
+            <div class="court-header">
+              <van-tag plain type="primary">场地 {{ m.courtIndex + 1 }}</van-tag>
+              <van-button size="mini" type="primary" @click="openScore(m)">录入比分</van-button>
+            </div>
+            <div class="vs">
+              <span class="team">{{ teamNames(m.teamAPlayerIds) }}</span>
+              <span class="vs-text">VS</span>
+              <span class="team">{{ teamNames(m.teamBPlayerIds) }}</span>
+            </div>
+            <div v-if="m.handicapTip" class="handicap">
+              <van-tag type="danger" plain size="small">{{ m.handicapTip }}</van-tag>
+            </div>
+            <div class="actions">
+              <van-button size="small" plain block @click="onEndCourt(m)">结束本局</van-button>
+            </div>
           </div>
-        </div>
-        <van-empty v-if="!state.courtMatches?.length" description="暂无进行中比赛" />
-      </section>
+          <van-empty v-if="!state.courtMatches?.length" description="暂无进行中比赛" />
+        </section>
 
-      <section class="section">
-        <h3>候场队列（下一场）</h3>
-        <div v-if="state.nextUp" class="next-up">
-          <div class="vs">
-            <span class="team">{{ teamNames(state.nextUp.teamAPlayerIds) }}</span>
-            <span class="vs-text">VS</span>
-            <span class="team">{{ teamNames(state.nextUp.teamBPlayerIds) }}</span>
+        <section class="section">
+          <div class="section-head">
+            <van-tag color="#ff976a" size="medium">候场</van-tag>
+            <h3>下一场</h3>
           </div>
-          <div v-if="state.nextUp.handicapTip" class="handicap">{{ state.nextUp.handicapTip }}</div>
-        </div>
-        <van-empty v-else description="人数不足或暂无下一场" />
-      </section>
+          <div v-if="state.nextUp" class="next-up">
+            <div class="vs">
+              <span class="team">{{ teamNames(state.nextUp.teamAPlayerIds) }}</span>
+              <span class="vs-text">VS</span>
+              <span class="team">{{ teamNames(state.nextUp.teamBPlayerIds) }}</span>
+            </div>
+            <div v-if="state.nextUp.handicapTip" class="handicap">
+              <van-tag type="danger" plain size="small">{{ state.nextUp.handicapTip }}</van-tag>
+            </div>
+          </div>
+          <van-empty v-else description="人数不足或暂无下一场" />
+        </section>
+      </van-pull-refresh>
 
-      <van-action-sheet v-model:show="showAddPlayer" title="添加选手（中途加入）">
+      <van-action-sheet v-model:show="showAddPlayer" title="添加选手（中途加入）" round>
         <van-form @submit="onAddPlayer">
           <van-cell-group inset>
-            <van-field v-model="newPlayer.name" label="姓名" placeholder="姓名" :rules="[{ required: true }]" />
+            <van-field v-model="newPlayer.name" label="姓名" placeholder="请输入姓名" clearable :rules="[{ required: true, message: '请输入姓名' }]" />
             <van-field name="gender" label="性别">
               <template #input>
                 <van-radio-group v-model="newPlayer.gender" direction="horizontal">
@@ -51,30 +71,68 @@
               </template>
             </van-field>
           </van-cell-group>
-          <div style="padding: 16px;"><van-button round block type="primary" native-type="submit">确认加入</van-button></div>
+          <div class="sheet-btn-wrap">
+            <van-button round block type="primary" native-type="submit">确认加入</van-button>
+          </div>
         </van-form>
       </van-action-sheet>
 
-      <van-dialog v-model:show="showScoreDialog" title="录入比分" show-cancel-button @confirm="onSubmitScore">
-        <van-cell-group inset>
-          <van-field v-model="scoreForm.scoreA" type="digit" label="A 队得分" placeholder="0" />
-          <van-field v-model="scoreForm.scoreB" type="digit" label="B 队得分" placeholder="0" />
-        </van-cell-group>
+      <van-dialog
+        v-model:show="showScoreDialog"
+        :title="scoreDialogTitle"
+        show-cancel-button
+        confirm-button-text="提交"
+        @confirm="onSubmitScore"
+      >
+        <div class="score-dialog-body">
+          <van-cell-group inset>
+            <van-field name="scoreA" label="A 队得分">
+              <template #input>
+                <van-stepper v-model="scoreForm.scoreA" :min="0" :max="99" integer />
+              </template>
+            </van-field>
+            <van-field name="scoreB" label="B 队得分">
+              <template #input>
+                <van-stepper v-model="scoreForm.scoreB" :min="0" :max="99" integer />
+              </template>
+            </van-field>
+          </van-cell-group>
+        </div>
       </van-dialog>
 
-      <van-action-sheet v-model:show="showLeaveList" title="选手早退（点击设为离场）">
+      <van-action-sheet v-model:show="showLeaveList" title="选手早退" round description="点击选手设为离场，不再安排上场">
         <div class="leave-list">
-          <van-cell v-for="p in activePlayers" :key="p.id" :title="`${p.name}（${p.gender === 'M' ? '男' : '女'}）`" clickable @click="doSetLeave(p)" />
+          <van-cell
+            v-for="p in activePlayers"
+            :key="p.id"
+            :title="p.name"
+            :label="p.gender === 'M' ? '男' : '女'"
+            clickable
+            @click="doSetLeave(p)"
+          >
+            <template #right-icon>
+              <van-icon name="arrow" />
+            </template>
+          </van-cell>
           <van-empty v-if="!activePlayers.length" description="暂无在场选手" />
         </div>
       </van-action-sheet>
     </template>
 
-    <van-loading v-else class="loading" type="spinner" />
+    <template v-else>
+      <div class="skeleton-wrap">
+        <van-skeleton title :row="4" class="skeleton-block" />
+        <van-skeleton title :row="3" class="skeleton-block" />
+      </div>
+    </template>
 
     <div class="fab-wrap">
-      <van-button round type="primary" class="fab" @click="showAddPlayer = true">+ 添加选手</van-button>
-      <van-button round plain class="fab fab2" @click="showLeaveList = true">选手早退</van-button>
+      <van-button round type="primary" class="fab-main" @click="showAddPlayer = true">
+        <van-icon name="plus" /> 添加选手
+      </van-button>
+      <van-button round plain class="fab-sub" @click="showLeaveList = true">
+        选手早退
+      </van-button>
     </div>
   </div>
 </template>
@@ -89,13 +147,19 @@ const route = useRoute();
 const router = useRouter();
 const activityId = route.params.id;
 const state = ref(null);
+const refreshing = ref(false);
 const showAddPlayer = ref(false);
 const showScoreDialog = ref(false);
 const showLeaveList = ref(false);
 const newPlayer = ref({ name: "", gender: "M" });
-const scoreForm = ref({ scoreA: "", scoreB: "" });
+const scoreForm = ref({ scoreA: 0, scoreB: 0 });
 const currentCourt = ref(null);
 let ws = null;
+
+const scoreDialogTitle = computed(() => {
+  if (!currentCourt.value) return "录入比分";
+  return `场地 ${(currentCourt.value.courtIndex || 0) + 1} - 录入比分`;
+});
 
 const activePlayers = computed(() => (state.value?.players || []).filter((p) => p.status === "active"));
 const playersById = computed(() => {
@@ -119,18 +183,14 @@ function goLeaderboard() {
 
 function openScore(m) {
   currentCourt.value = m;
-  scoreForm.value = { scoreA: "", scoreB: "" };
+  scoreForm.value = { scoreA: 0, scoreB: 0 };
   showScoreDialog.value = true;
 }
 
 async function onSubmitScore() {
   if (!currentCourt.value) return;
-  const sA = parseInt(scoreForm.value.scoreA, 10);
-  const sB = parseInt(scoreForm.value.scoreB, 10);
-  if (isNaN(sA) || isNaN(sB)) {
-    showToast("请输入有效比分");
-    return;
-  }
+  const sA = Number(scoreForm.value.scoreA) || 0;
+  const sB = Number(scoreForm.value.scoreB) || 0;
   try {
     state.value = await submitScore(activityId, currentCourt.value.courtIndex, sA, sB);
     showScoreDialog.value = false;
@@ -181,6 +241,12 @@ async function fetchLive() {
   }
 }
 
+async function onRefresh() {
+  refreshing.value = true;
+  await fetchLive();
+  refreshing.value = false;
+}
+
 onMounted(() => {
   fetchLive();
   ws = wsLive(activityId, (data) => { state.value = data; });
@@ -192,21 +258,24 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.live-page { padding-bottom: 100px; }
+.live-page { min-height: 100vh; background: var(--van-gray-1); padding-bottom: 120px; }
 .section { padding: 12px 16px; }
-.section h3 { margin: 0 0 12px; font-size: 15px; color: #333; }
-.court-card { background: #f7f8fa; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
-.court-title { font-weight: 600; margin-bottom: 8px; }
-.vs { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.team { flex: 1; min-width: 80px; font-size: 14px; }
-.vs-text { color: #969799; font-size: 12px; }
-.handicap { margin-top: 6px; font-size: 12px; color: #ee0a24; }
-.actions { margin-top: 10px; display: flex; gap: 8px; }
-.next-up { background: #fff7e6; border: 1px solid #ffd591; border-radius: 8px; padding: 12px; }
-.loading { margin: 40px auto; display: block; }
-.fab-wrap { position: fixed; right: 16px; bottom: 24px; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
-.fab { box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
-.fab2 { margin-right: 0; }
+.section-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.section-head h3 { margin: 0; font-size: 16px; font-weight: 600; color: var(--van-text-color); }
+.court-card { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.court-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.vs { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; }
+.team { flex: 1; min-width: 80px; }
+.vs-text { color: var(--van-gray-6); font-size: 12px; font-weight: 500; }
+.handicap { margin-top: 8px; }
+.actions { margin-top: 12px; }
+.next-up { background: linear-gradient(135deg, #fff7e6 0%, #fffbe6 100%); border-radius: 12px; padding: 16px; border: 1px solid #ffd591; }
+.skeleton-wrap { padding: 16px; }
+.skeleton-block { margin-bottom: 16px; padding: 16px; background: #fff; border-radius: 12px; }
+.fab-wrap { position: fixed; right: 16px; bottom: calc(24px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 10px; align-items: flex-end; z-index: 100; }
+.fab-main { box-shadow: 0 4px 12px rgba(25, 137, 250, 0.4); padding: 0 20px; }
+.fab-sub { margin-right: 0; }
+.sheet-btn-wrap { padding: 16px; }
+.score-dialog-body { padding: 8px 0; }
 .leave-list { max-height: 60vh; overflow: auto; }
-.leave-item { padding: 14px 16px; border-bottom: 1px solid #eee; }
 </style>
