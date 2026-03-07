@@ -144,8 +144,11 @@ async function submitCourtScore(activityId, courtIndex, scoreA, scoreB, broadcas
     scoreB: sB,
     handicapTip: courtMatch.handicapTip || "",
   });
-  const allPlayerIds = [...(courtMatch.teamAPlayerIds || []), ...(courtMatch.teamBPlayerIds || [])];
-  for (const pid of allPlayerIds) {
+  const justPlayedIds = new Set([...(courtMatch.teamAPlayerIds || []), ...(courtMatch.teamBPlayerIds || [])]);
+  await courtMatch.destroy();
+
+  // 第一步：只更新刚打完的上场玩家
+  for (const pid of justPlayedIds) {
     const p = await ActivityPlayer.findByPk(pid);
     if (p) {
       await p.update({
@@ -156,7 +159,8 @@ async function submitCourtScore(activityId, courtIndex, scoreA, scoreB, broadcas
       });
     }
   }
-  await courtMatch.destroy();
+
+  // 第二步：用最新选手状态排下一场（此时轮空玩家的 consecutiveRest 是准确的旧值）
   const players = await ActivityPlayer.findAll({ where: { activityId: id } });
   const playerList = players.map((p) => p.toJSON());
   const courtMatches = await CourtMatch.findAll({ where: { activityId: id } });
@@ -164,6 +168,7 @@ async function submitCourtScore(activityId, courtIndex, scoreA, scoreB, broadcas
   const next = activity.mode === "dynamic"
     ? computeNextMatch(playerList, courtMatches.map((m) => m.toJSON()), matchResults.map((r) => r.toJSON()), activity.handicapRules || [])
     : null;
+
   if (next) {
     await CourtMatch.create({
       id: uuid(),
@@ -174,15 +179,17 @@ async function submitCourtScore(activityId, courtIndex, scoreA, scoreB, broadcas
       handicapTip: next.handicapTip,
       status: "playing",
     });
-    const onCourt = new Set([...next.teamAPlayerIds, ...next.teamBPlayerIds]);
-    for (const p of players) {
-      if (!onCourt.has(p.id)) {
-        await p.update({
-          restCount: (p.restCount || 0) + 1,
-          consecutiveRest: (p.consecutiveRest || 0) + 1,
-          consecutivePlay: 0,
-        });
-      }
+  }
+
+  // 第三步：更新轮空玩家（未参与刚结束那场、且未进入下一场的 active 玩家）
+  const newOnCourtIds = next ? new Set([...next.teamAPlayerIds, ...next.teamBPlayerIds]) : new Set();
+  for (const p of players) {
+    if (p.status === "active" && !justPlayedIds.has(p.id) && !newOnCourtIds.has(p.id)) {
+      await p.update({
+        restCount: (p.restCount || 0) + 1,
+        consecutiveRest: (p.consecutiveRest || 0) + 1,
+        consecutivePlay: 0,
+      });
     }
   }
   const state = await getLiveState(id);
