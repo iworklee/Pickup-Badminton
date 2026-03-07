@@ -1,6 +1,6 @@
 const { Activity, ActivityPlayer, CourtMatch, MatchResult } = require("../model/db");
 const { uuid } = require("../model/db");
-const { computeNextMatch, getHandicapTip, isSameMatchup } = require("../utils/scheduler");
+const { computeNextMatch, isSameMatchup } = require("../utils/scheduler");
 
 function distinctMatchCount(matchResults) {
   const list = matchResults || [];
@@ -97,14 +97,13 @@ async function submitCourtScore(activityId, courtIndex, scoreA, scoreB, broadcas
     ? computeNextMatch(playerList, courtMatches.map((m) => m.toJSON()), matchResults.map((r) => r.toJSON()), activity.handicapRules || [])
     : null;
   if (next) {
-    const handicapTip = getHandicapTip(next.teamAPlayerIds, next.teamBPlayerIds, Object.fromEntries(playerList.map((p) => [p.id, p])), activity.handicapRules || []);
     await CourtMatch.create({
       id: uuid(),
       activityId: id,
       courtIndex: ci,
       teamAPlayerIds: next.teamAPlayerIds,
       teamBPlayerIds: next.teamBPlayerIds,
-      handicapTip,
+      handicapTip: next.handicapTip,
       status: "playing",
     });
     const onCourt = new Set([...next.teamAPlayerIds, ...next.teamBPlayerIds]);

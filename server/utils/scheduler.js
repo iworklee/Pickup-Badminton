@@ -183,3 +183,32 @@ function computeNextMatch(players, courtMatches, matchResults, handicapRules, ex
     players: bestMatch.players,
   };
 }
+
+function getHandicapTip(teamAPlayerIds, teamBPlayerIds, playersById, handicapRules) {
+  if (!handicapRules || handicapRules.length === 0) return "";
+  const getGenders = (ids) => (ids || []).map((id) => playersById[id]?.gender).filter(Boolean);
+  const countM = (genders) => genders.filter((g) => g === "M").length;
+  const teamAG = getGenders(teamAPlayerIds);
+  const teamBG = getGenders(teamBPlayerIds);
+  const aM = countM(teamAG);
+  const bM = countM(teamBG);
+  for (const rule of handicapRules) {
+    const name = (rule.name || "").toLowerCase();
+    let give = 0;
+    // 男双让混双：男双一方需让分（混双获让分）
+    if (name.includes("男双") && name.includes("混双")) {
+      if (aM === 2 && bM === 1) give = -(rule.points || 0); // A 男双 → A 队需让
+      else if (bM === 2 && aM === 1) give = rule.points || 0;  // B 男双 → B 队需让
+    }
+    if (give !== 0) {
+      return give > 0 ? `B 队需让 ${give} 分` : `A 队需让 ${-give} 分`;
+    }
+  }
+  return "";
+}
+
+module.exports = {
+  computeNextMatch,
+  getPlayerIdsOnCourt,
+  isSameMatchup,
+};

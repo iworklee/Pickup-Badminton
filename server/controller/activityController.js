@@ -1,7 +1,7 @@
 const { Activity, ActivityPlayer, CourtMatch, MatchResult } = require("../model/db");
 const { uuid } = require("../model/db");
 const activityService = require("../service/activityService");
-const { computeNextMatch, getHandicapTip } = require("../utils/scheduler");
+const { computeNextMatch } = require("../utils/scheduler");
 const { broadcastLive } = require("../ws");
 
 async function create(req, res) {
@@ -64,14 +64,13 @@ async function start(req, res) {
         const matchResults = await MatchResult.findAll({ where: { activityId: id } });
         const next = computeNextMatch(playerList, courtMatches.map((m) => m.toJSON()), matchResults.map((r) => r.toJSON()), activity.handicapRules || []);
         if (next) {
-          const handicapTip = getHandicapTip(next.teamAPlayerIds, next.teamBPlayerIds, Object.fromEntries(playerList.map((p) => [p.id, p])), activity.handicapRules || []);
           await CourtMatch.create({
             id: uuid(),
             activityId: id,
             courtIndex: c,
             teamAPlayerIds: next.teamAPlayerIds,
             teamBPlayerIds: next.teamBPlayerIds,
-            handicapTip,
+            handicapTip: next.handicapTip,
             status: "playing",
           });
           const onCourt = new Set([...next.teamAPlayerIds, ...next.teamBPlayerIds]);
