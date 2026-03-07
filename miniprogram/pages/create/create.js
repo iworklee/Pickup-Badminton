@@ -1,4 +1,5 @@
 const api = require("../../utils/api");
+const { addRecent } = require("../../utils/recentActivities");
 
 Page({
   data: {
@@ -130,6 +131,7 @@ Page({
         players,
       });
       await api.startActivity(data.activity.id);
+      addRecent({ id: data.activity.id, title: data.activity.title });
       wx.showToast({ title: "活动已开始", icon: "success" });
       wx.redirectTo({ url: "/pages/live/live?id=" + data.activity.id });
     } catch (e) {

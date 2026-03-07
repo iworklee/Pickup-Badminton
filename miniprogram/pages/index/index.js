@@ -1,9 +1,16 @@
+const { getRecent } = require("../../utils/recentActivities");
+
 Page({
   data: {
     activityId: "",
+    recentList: [],
   },
 
   onLoad() {},
+
+  onShow() {
+    this.setData({ recentList: getRecent() });
+  },
 
   onActivityIdInput(e) {
     this.setData({ activityId: (e.detail.value || "").trim() });
@@ -20,5 +27,10 @@ Page({
       return;
     }
     wx.navigateTo({ url: "/pages/live/live?id=" + encodeURIComponent(id) });
+  },
+
+  goLiveById(e) {
+    const id = e.currentTarget.dataset.id;
+    if (id) wx.navigateTo({ url: "/pages/live/live?id=" + encodeURIComponent(id) });
   },
 });

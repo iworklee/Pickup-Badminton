@@ -1,5 +1,6 @@
 const api = require("../../utils/api");
 const { wsLive } = require("../../utils/ws");
+const { addRecent } = require("../../utils/recentActivities");
 
 function teamNames(ids, playersById) {
   if (!ids || !ids.length || !playersById) return "-";
@@ -68,6 +69,7 @@ Page({
     try {
       const raw = await api.getLive(this.data.id);
       this.setData({ state: enrichState(raw) });
+      if (raw && raw.activity) addRecent({ id: raw.activity.id, title: raw.activity.title });
     } catch (e) {
       wx.showToast({ title: e.message || "加载失败", icon: "none" });
     }

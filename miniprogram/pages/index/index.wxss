@@ -57,3 +57,50 @@
   border-radius: 48rpx;
   font-size: 28rpx;
 }
+
+.recent-section {
+  margin-top: 48rpx;
+  padding: 0 8rpx;
+}
+
+.recent-title {
+  font-size: 28rpx;
+  color: #969799;
+  margin-bottom: 20rpx;
+  padding-left: 8rpx;
+}
+
+.recent-list {
+  background: #fff;
+  border-radius: 24rpx;
+  overflow: hidden;
+  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06);
+}
+
+.recent-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx 32rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.recent-item:last-child {
+  border-bottom: none;
+}
+
+.recent-name {
+  font-size: 30rpx;
+  color: #323233;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-id {
+  font-size: 24rpx;
+  color: #969799;
+  margin-left: 16rpx;
+  flex-shrink: 0;
+}

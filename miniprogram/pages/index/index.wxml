@@ -9,4 +9,13 @@
     <input class="input" placeholder="输入活动 ID" value="{{activityId}}" bindinput="onActivityIdInput" />
     <button class="btn-secondary" bindtap="goLive">进入看板</button>
   </view>
+  <view class="recent-section" wx:if="{{recentList.length > 0}}">
+    <view class="recent-title">最近的活动</view>
+    <view class="recent-list">
+      <view class="recent-item" wx:for="{{recentList}}" wx:key="id" data-id="{{item.id}}" bindtap="goLiveById">
+        <text class="recent-name">{{item.title}}</text>
+        <text class="recent-id">{{item.id}}</text>
+      </view>
+    </view>
+  </view>
 </view>
