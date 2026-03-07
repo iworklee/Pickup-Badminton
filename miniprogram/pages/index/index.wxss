@@ -79,8 +79,8 @@
 
 .recent-item {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 8rpx;
   padding: 28rpx 32rpx;
   border-bottom: 1rpx solid #f0f0f0;
 }
@@ -92,15 +92,12 @@
 .recent-name {
   font-size: 30rpx;
   color: #323233;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .recent-id {
-  font-size: 24rpx;
-  color: #969799;
-  margin-left: 16rpx;
-  flex-shrink: 0;
+  font-size: 22rpx;
+  color: #c8c9cc;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

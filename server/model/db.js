@@ -28,6 +28,8 @@ const ActivityPlayer = sequelize.define("ActivityPlayer", {
   status: { type: DataTypes.ENUM("active", "left"), allowNull: false, defaultValue: "active" },
   playCount: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
   restCount: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+  consecutivePlay: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+  consecutiveRest: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
 });
 
 const CourtMatch = sequelize.define("CourtMatch", {
