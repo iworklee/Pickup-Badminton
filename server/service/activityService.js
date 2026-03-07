@@ -28,18 +28,61 @@ async function getLiveState(activityId) {
   const playerList = players.map((p) => p.toJSON());
   const courtMatchesData = courtMatches.map((m) => m.toJSON());
   const matchResultsData = matchResults.map((r) => r.toJSON());
-  let nextUp = activity.status === "live" && activity.mode === "dynamic"
-    ? computeNextMatch(playerList, courtMatchesData, matchResultsData, activity.handicapRules || [])
-    : null;
-  let nextUpIsPreview = false;
   const activePlayerCount = playerList.filter((p) => p.status === "active").length;
-  if (!nextUp && activity.status === "live" && activity.mode === "dynamic" && activePlayerCount >= 4 && courtMatchesData.length > 0) {
-    const excludeMatchup = courtMatchesData[0]
-      ? { teamAPlayerIds: courtMatchesData[0].teamAPlayerIds, teamBPlayerIds: courtMatchesData[0].teamBPlayerIds }
-      : null;
-    nextUp = computeNextMatch(playerList, [], matchResultsData, activity.handicapRules || [], excludeMatchup);
-    if (nextUp) nextUpIsPreview = true;
+
+  // 计算所有候场场次列表
+  const upcomingMatches = [];
+  if (activity.status === "live" && activity.mode === "dynamic" && activePlayerCount >= 4) {
+    let simulatedCourtMatches = [...courtMatchesData];
+    let simulatedResults = [...matchResultsData];
+    // 深拷贝选手状态，用于推演 playCount/restCount
+    let simulatedPlayers = playerList.map((p) => ({ ...p }));
+    const MAX_UPCOMING = 10;
+
+    for (let round = 0; round < MAX_UPCOMING; round++) {
+      const hasOnCourt = simulatedCourtMatches.length > 0;
+      // 第一场需排除当前在场的搭档组合（避免同组连续打两场）
+      const excludeMatchup = round === 0 && hasOnCourt && simulatedCourtMatches[0]
+        ? { teamAPlayerIds: simulatedCourtMatches[0].teamAPlayerIds, teamBPlayerIds: simulatedCourtMatches[0].teamBPlayerIds }
+        : null;
+
+      const next = computeNextMatch(
+        simulatedPlayers,
+        simulatedCourtMatches,
+        simulatedResults,
+        activity.handicapRules || [],
+        excludeMatchup
+      );
+      if (!next) break;
+
+      upcomingMatches.push({
+        teamAPlayerIds: next.teamAPlayerIds,
+        teamBPlayerIds: next.teamBPlayerIds,
+        handicapTip: next.handicapTip,
+        isPreview: round === 0 && hasOnCourt,
+      });
+
+      // 推演：将这场加入模拟历史，更新模拟选手状态
+      simulatedResults = [
+        ...simulatedResults,
+        { teamAPlayerIds: next.teamAPlayerIds, teamBPlayerIds: next.teamBPlayerIds },
+      ];
+      const onCourtIds = new Set([...next.teamAPlayerIds, ...next.teamBPlayerIds]);
+      simulatedPlayers = simulatedPlayers.map((p) => ({
+        ...p,
+        playCount: onCourtIds.has(p.id) ? (p.playCount || 0) + 1 : p.playCount,
+        restCount: onCourtIds.has(p.id) ? 0 : (p.restCount || 0) + 1,
+      }));
+      // 模拟在场状态不叠加（候场推演基于轮换，不维护多场地并行）
+      simulatedCourtMatches = [{ teamAPlayerIds: next.teamAPlayerIds, teamBPlayerIds: next.teamBPlayerIds }];
+    }
   }
+
+  // 兼容旧字段 nextUp（取候场第一场）
+  const nextUp = upcomingMatches.length > 0
+    ? { teamAPlayerIds: upcomingMatches[0].teamAPlayerIds, teamBPlayerIds: upcomingMatches[0].teamBPlayerIds, handicapTip: upcomingMatches[0].handicapTip, nextUpIsPreview: upcomingMatches[0].isPreview }
+    : null;
+
   const recentResults = [...matchResults].reverse().slice(0, 5).map((r) => ({
     id: r.id,
     courtIndex: r.courtIndex,
@@ -56,7 +99,8 @@ async function getLiveState(activityId) {
     activity: activity.toJSON(),
     players: playerList,
     courtMatches: courtMatches.map((m) => m.toJSON()),
-    nextUp: nextUp ? { teamAPlayerIds: nextUp.teamAPlayerIds, teamBPlayerIds: nextUp.teamBPlayerIds, handicapTip: nextUp.handicapTip, nextUpIsPreview } : null,
+    nextUp,
+    upcomingMatches,
     recentResults,
     matchStats: { totalMatchesEstimate, playedCount, remainingMatchesEstimate, activePlayerCount, courtCount },
   };

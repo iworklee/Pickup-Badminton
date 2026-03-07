@@ -20,12 +20,17 @@ function enrichState(state) {
   const nextUp = state.nextUp
     ? { ...state.nextUp, teamANames: names(state.nextUp.teamAPlayerIds), teamBNames: names(state.nextUp.teamBPlayerIds) }
     : null;
+  const upcomingMatches = (state.upcomingMatches || []).map((m) => ({
+    ...m,
+    teamANames: names(m.teamAPlayerIds),
+    teamBNames: names(m.teamBPlayerIds),
+  }));
   const recentResults = (state.recentResults || []).map((r) => ({
     ...r,
     teamANames: names(r.teamAPlayerIds),
     teamBNames: names(r.teamBPlayerIds),
   }));
-  return { ...state, courtMatches, nextUp, recentResults };
+  return { ...state, courtMatches, nextUp, upcomingMatches, recentResults };
 }
 
 Page({

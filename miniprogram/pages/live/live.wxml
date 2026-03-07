@@ -62,25 +62,31 @@
     <view class="section">
       <view class="section-head">
         <text class="tag tag-orange">候场</text>
-        <text class="section-title">下一场{{state.nextUp && state.nextUp.nextUpIsPreview ? '（本场结束后）' : ''}}</text>
+        <text class="section-title">待打场次</text>
       </view>
-      <view wx:if="{{state.nextUp}}" class="next-up">
-        <view class="vs">
-          <view class="team-wrap">
-            <text class="team-label team-a">A队</text>
-            <text class="team">{{state.nextUp.teamANames}}</text>
+      <block wx:if="{{state.upcomingMatches && state.upcomingMatches.length}}">
+        <view wx:for="{{state.upcomingMatches}}" wx:key="index" class="upcoming-card">
+          <view class="upcoming-header">
+            <text class="upcoming-label">第 {{index + 1}} 场</text>
+            <text wx:if="{{item.isPreview}}" class="upcoming-tip">本场结束后上场</text>
           </view>
-          <text class="vs-text">VS</text>
-          <view class="team-wrap">
-            <text class="team-label team-b">B队</text>
-            <text class="team">{{state.nextUp.teamBNames}}</text>
+          <view class="vs">
+            <view class="team-wrap">
+              <text class="team-label team-a">A队</text>
+              <text class="team">{{item.teamANames}}</text>
+            </view>
+            <text class="vs-text">VS</text>
+            <view class="team-wrap">
+              <text class="team-label team-b">B队</text>
+              <text class="team">{{item.teamBNames}}</text>
+            </view>
+          </view>
+          <view wx:if="{{item.handicapTip}}" class="handicap">
+            <text class="tag tag-danger">{{item.handicapTip}}</text>
           </view>
         </view>
-        <view wx:if="{{state.nextUp.handicapTip}}" class="handicap">
-          <text class="tag tag-danger">{{state.nextUp.handicapTip}}</text>
-        </view>
-      </view>
-      <view wx:else class="empty">人数不足或暂无下一场</view>
+      </block>
+      <view wx:else class="empty">人数不足或暂无候场</view>
     </view>
   </block>
 
@@ -115,17 +121,17 @@
   </view>
 
   <!-- 录入比分 -->
-  <view wx:if="{{showScore && currentCourt}}" id="maskScore" class="mask" bindtap="closeScore">
+  <view wx:if="{{showScore && currentCourt}}" id="maskScore" class="mask mask-center" bindtap="closeScore">
     <view class="dialog" catchtap="preventClose" catchtouchmove="preventClose">
       <view class="dialog-title">场地 {{currentCourt.courtIndex + 1}} - 录入比分</view>
       <view class="dialog-body">
         <view class="form-cell">
           <text class="form-label">A 队得分</text>
-          <input type="digit" class="form-input num" value="{{scoreForm.scoreA}}" placeholder="0" placeholder-class="input-placeholder" bindinput="onScoreAInput" />
+          <input type="digit" class="form-input num" value="{{scoreForm.scoreA}}" placeholder="0" placeholder-class="input-placeholder" bindinput="onScoreAInput" adjust-position="{{false}}" cursor-spacing="80" />
         </view>
         <view class="form-cell">
           <text class="form-label">B 队得分</text>
-          <input type="digit" class="form-input num" value="{{scoreForm.scoreB}}" placeholder="0" placeholder-class="input-placeholder" bindinput="onScoreBInput" />
+          <input type="digit" class="form-input num" value="{{scoreForm.scoreB}}" placeholder="0" placeholder-class="input-placeholder" bindinput="onScoreBInput" adjust-position="{{false}}" cursor-spacing="80" />
         </view>
       </view>
       <view class="dialog-actions">
@@ -136,17 +142,17 @@
   </view>
 
   <!-- 修改比分 -->
-  <view wx:if="{{showEditScore}}" id="maskEditScore" class="mask" bindtap="closeEditScore">
+  <view wx:if="{{showEditScore}}" id="maskEditScore" class="mask mask-center" bindtap="closeEditScore">
     <view class="dialog" catchtap="preventClose" catchtouchmove="preventClose">
       <view class="dialog-title">修改比分</view>
       <view class="dialog-body">
         <view class="form-cell">
           <text class="form-label">A 队得分</text>
-          <input type="digit" class="form-input num" value="{{editScoreForm.scoreA}}" placeholder="0" placeholder-class="input-placeholder" bindinput="onEditScoreAInput" />
+          <input type="digit" class="form-input num" value="{{editScoreForm.scoreA}}" placeholder="0" placeholder-class="input-placeholder" bindinput="onEditScoreAInput" adjust-position="{{false}}" cursor-spacing="80" />
         </view>
         <view class="form-cell">
           <text class="form-label">B 队得分</text>
-          <input type="digit" class="form-input num" value="{{editScoreForm.scoreB}}" placeholder="0" placeholder-class="input-placeholder" bindinput="onEditScoreBInput" />
+          <input type="digit" class="form-input num" value="{{editScoreForm.scoreB}}" placeholder="0" placeholder-class="input-placeholder" bindinput="onEditScoreBInput" adjust-position="{{false}}" cursor-spacing="80" />
         </view>
       </view>
       <view class="dialog-actions">
