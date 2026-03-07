@@ -107,6 +107,17 @@ function isSameMatchup(teamA, teamB, oneResult) {
   return (sameSet(teamA, la) && sameSet(teamB, lb)) || (sameSet(teamA, lb) && sameSet(teamB, la));
 }
 
+/** 是否重复了待排除对阵中的任一方搭档（同一对队友不能再连续打两场） */
+function repeatsExcludedPartnership(teamAIds, teamBIds, excludeMatchup) {
+  if (!excludeMatchup) return false;
+  const exA = excludeMatchup.teamAPlayerIds || [];
+  const exB = excludeMatchup.teamBPlayerIds || [];
+  return (
+    sameSet(teamAIds, exA) || sameSet(teamAIds, exB) ||
+    sameSet(teamBIds, exA) || sameSet(teamBIds, exB)
+  );
+}
+
 function computeNextMatch(players, courtMatches, matchResults, handicapRules, excludeMatchup) {
   const onCourtIds = getPlayerIdsOnCourt(courtMatches);
   const availablePlayers = (players || []).filter(
@@ -147,8 +158,9 @@ function computeNextMatch(players, courtMatches, matchResults, handicapRules, ex
             const t1Ids = t1.map((p) => p.id);
             const t2Ids = t2.map((p) => p.id);
             if (excludeMatchup && isSameMatchup(t1Ids, t2Ids, excludeMatchup)) continue;
+            if (excludeMatchup && repeatsExcludedPartnership(t1Ids, t2Ids, excludeMatchup)) continue;
             
-            const score = evaluateMatchup(t1, t2, hist); // 移除 maxGames 参数传递
+            const score = evaluateMatchup(t1, t2, hist);
             if (score > bestScore) {
               bestScore = score;
               bestMatch = {
