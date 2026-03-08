@@ -11,8 +11,9 @@
  *   - 一个完整循环轮次 = ceil(N / 4)
  *   - 最大连续休息 = ceil(restPerRound / 4) + 1，最低保证为 1
  *
- * 连续上场上限（MAX_CONSECUTIVE_PLAY）：
- *   - 固定为 3（连续打超过3场必须歇一场，防止体力透支）
+ * 连续上场上限（MAX_CONSECUTIVE_PLAY）动态公式：
+ *   - 根据人数动态计算：ceil(4 / restPerRound) + 1，最低保证为 3
+ *   - 例如 5 人局，restPerRound = 1，上限为 ceil(4/1) + 1 = 5 场
  */
 
 const WEIGHTS = {
@@ -21,8 +22,16 @@ const WEIGHTS = {
   GENDER_BALANCE: 30,   // 性别阵容对等奖励
 };
 
-// 连续上场上限：超过此值强制本场休息
-const MAX_CONSECUTIVE_PLAY = 3;
+/**
+ * 根据当前活跃人数动态计算最大允许连续上场场数
+ * 防止人数较少时因强制休息导致无法凑齐 4 人
+ */
+function getMaxConsecutivePlay(totalActive) {
+  if (totalActive <= 4) return 999; // 4人以下无需强制休息
+  const restPerRound = totalActive - 4;
+  // 计算理论上完成一轮休息所需的上场次数，+1 提供缓冲，最低不能小于 3
+  return Math.max(3, Math.ceil(4 / restPerRound) + 1);
+}
 
 /**
  * 根据当前活跃人数动态计算最大允许连续休息场数
@@ -148,6 +157,7 @@ function repeatsExcludedPartnership(teamAIds, teamBIds, excludeMatchup) {
  *
  * 第二层 - 强制休息（mustRest）：
  *   连续上场 >= MAX_CONSECUTIVE_PLAY 的玩家必须本场休息
+ *   （附带防死锁逻辑：若强制休息导致剩余人数不足 4 人，逐步释放 mustRest 玩家）
  *
  * 第三层 - 自由候选池：
  *   剩余玩家按出场次数（少的优先）+ 连续休息场数（久的优先）排序，
@@ -158,17 +168,18 @@ function repeatsExcludedPartnership(teamAIds, teamBIds, excludeMatchup) {
  */
 function buildCandidatePool(availablePlayers, totalActive) {
   const maxRest = getMaxConsecutiveRest(totalActive);
+  const maxPlay = getMaxConsecutivePlay(totalActive);
 
   const mustPlay = [];   // 连续休息过久，必须上场
-  const mustRest = new Set(); // 连续上场过久，必须休息
+  const mustRestPlayers = []; // 连续上场过久，尝试强制休息
   const free = [];       // 其余自由候选
 
   for (const p of availablePlayers) {
     const consRest = p.consecutiveRest || 0;
     const consPlay = p.consecutivePlay || 0;
 
-    if (consPlay >= MAX_CONSECUTIVE_PLAY) {
-      mustRest.add(p.id);
+    if (consPlay >= maxPlay) {
+      mustRestPlayers.push(p);
     } else if (consRest >= maxRest && maxRest > 0) {
       mustPlay.push(p);
     } else {
@@ -176,8 +187,19 @@ function buildCandidatePool(availablePlayers, totalActive) {
     }
   }
 
-  // 过滤掉强制休息的人
-  const mustPlayFiltered = mustPlay.filter((p) => !mustRest.has(p.id));
+  // 防死锁逻辑：如果必须上场的和自由的人加起来不够 4 个，只能把必须休息的人放出来
+  // 按照 consecutivePlay 从小到大排序（优先放出刚才打得没那么久的人）
+  while (mustPlay.length + free.length < 4 && mustRestPlayers.length > 0) {
+    mustRestPlayers.sort((a, b) => (a.consecutivePlay || 0) - (b.consecutivePlay || 0));
+    // 弹出一个上场次数最少的，加入自由池
+    const releasedPlayer = mustRestPlayers.shift();
+    free.push(releasedPlayer);
+  }
+
+  const mustRestSet = new Set(mustRestPlayers.map(p => p.id));
+
+  // 过滤掉最终被确认强制休息的人
+  const mustPlayFiltered = mustPlay.filter((p) => !mustRestSet.has(p.id));
 
   // 自由候选按优先级排序：出场少的优先，同等则连续休息久的优先
   const maxGames = Math.max(0, ...availablePlayers.map((p) => p.playCount || 0));
@@ -185,7 +207,7 @@ function buildCandidatePool(availablePlayers, totalActive) {
     (maxGames - (p.playCount || 0)) * 100 + (p.consecutiveRest || 0) * 10;
 
   const freeFiltered = free
-    .filter((p) => !mustRest.has(p.id))
+    .filter((p) => !mustRestSet.has(p.id))
     .sort((a, b) => priority(b) - priority(a));
 
   // 合并候选池：mustPlay 优先，free 补位，总数够 4 即可
