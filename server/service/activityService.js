@@ -29,35 +29,91 @@ async function getLiveState(activityId) {
   const courtMatchesData = courtMatches.map((m) => m.toJSON());
   const matchResultsData = matchResults.map((r) => r.toJSON());
   const activePlayerCount = playerList.filter((p) => p.status === "active").length;
+  const courtCount = activity.courtCount || 1;
+  // Round Robin 完整循环场数：4人=3场，N人(N≥5)=N场
+  const cycleGames = activePlayerCount === 4 ? 3 : Math.max(activePlayerCount, 1);
 
-  // 计算所有候场场次列表
-  // 推演思路：候场是"当前场结束后"的安排，所以每轮推演都假设上一轮在场的比赛已结束，
-  // 把在场选手释放出来，加入历史记录，再从全部可用人中排下一场。
+  // 自愈：场地空了但活动还在进行中，自动补排下一场
+  if (activity.status === "live" && activity.mode === "dynamic" && activePlayerCount >= 4) {
+    for (let c = 0; c < courtCount; c++) {
+      const hasMatch = courtMatchesData.some((m) => m.courtIndex === c);
+      if (!hasMatch) {
+        const next = computeNextMatch(
+          playerList,
+          courtMatchesData,
+          matchResultsData,
+          activity.handicapRules || []
+        );
+        if (next) {
+          await CourtMatch.create({
+            id: uuid(),
+            activityId,
+            courtIndex: c,
+            teamAPlayerIds: next.teamAPlayerIds,
+            teamBPlayerIds: next.teamBPlayerIds,
+            handicapTip: next.handicapTip,
+            status: "playing",
+          });
+          courtMatchesData.push({
+            courtIndex: c,
+            teamAPlayerIds: next.teamAPlayerIds,
+            teamBPlayerIds: next.teamBPlayerIds,
+            handicapTip: next.handicapTip,
+          });
+          // 同步更新轮空玩家状态
+          const newOnCourtIds = new Set([...next.teamAPlayerIds, ...next.teamBPlayerIds]);
+          for (const p of players) {
+            if (p.status === "active" && !newOnCourtIds.has(p.id)) {
+              await p.update({
+                restCount: (p.restCount || 0) + 1,
+                consecutiveRest: (p.consecutiveRest || 0) + 1,
+                consecutivePlay: 0,
+              });
+            }
+          }
+          // 刷新 playerList 以反映最新状态
+          const refreshed = await ActivityPlayer.findAll({ where: { activityId }, order: [["createdAt", "ASC"]] });
+          playerList.splice(0, playerList.length, ...refreshed.map((p) => p.toJSON()));
+        }
+      }
+    }
+  }
+
+  // 计算候场场次列表
+  // 推演思路：候场是"当前场结束后"的安排，每轮推演假设当前在场已结束，排下一场。
+  // 当场地有比赛时：模拟当前场结束后的状态作为推演起点
+  // 当场地为空时：直接用数据库真实状态作为推演起点（不做 consecutivePlay 清零）
   const upcomingMatches = [];
   if (activity.status === "live" && activity.mode === "dynamic" && activePlayerCount >= 4) {
-    // 初始模拟历史 = 已完成比赛 + 当前在场比赛（当前在场视为"即将结束"，下一场从空场开始排）
+    const hasCurrentMatch = courtMatchesData.length > 0;
+
     let simulatedResults = [
       ...matchResultsData,
       ...courtMatchesData.map((m) => ({ teamAPlayerIds: m.teamAPlayerIds, teamBPlayerIds: m.teamBPlayerIds })),
     ];
-    // 深拷贝选手状态，候场推演从空场开始，所有 active 选手均可用
     let simulatedPlayers = playerList.map((p) => ({ ...p }));
-    // 当前在场的选手 playCount 也算进去（他们正在打这场）
-    const currentOnCourtIds = new Set(courtMatchesData.flatMap((m) => [...(m.teamAPlayerIds || []), ...(m.teamBPlayerIds || [])]));
-    simulatedPlayers = simulatedPlayers.map((p) => ({
-      ...p,
-      playCount: currentOnCourtIds.has(p.id) ? (p.playCount || 0) + 1 : p.playCount,
-      restCount: currentOnCourtIds.has(p.id) ? 0 : (p.restCount || 0) + 1,
-      consecutivePlay: currentOnCourtIds.has(p.id) ? (p.consecutivePlay || 0) + 1 : 0,
-      consecutiveRest: currentOnCourtIds.has(p.id) ? 0 : (p.consecutiveRest || 0) + 1,
-    }));
 
-    const MAX_UPCOMING = 10;
+    if (hasCurrentMatch) {
+      // 有当前进行中比赛：模拟当前场结束后，所有人重新可用
+      const currentOnCourtIds = new Set(courtMatchesData.flatMap((m) => [...(m.teamAPlayerIds || []), ...(m.teamBPlayerIds || [])]));
+      simulatedPlayers = simulatedPlayers.map((p) => ({
+        ...p,
+        playCount: currentOnCourtIds.has(p.id) ? (p.playCount || 0) + 1 : p.playCount,
+        restCount: currentOnCourtIds.has(p.id) ? 0 : (p.restCount || 0) + 1,
+        // 上场者 consecutivePlay+1，休息者清零（本场结束后上场者连打记录+1）
+        consecutivePlay: currentOnCourtIds.has(p.id) ? (p.consecutivePlay || 0) + 1 : 0,
+        consecutiveRest: currentOnCourtIds.has(p.id) ? 0 : (p.consecutiveRest || 0) + 1,
+      }));
+    }
+    // 场地为空时直接用 playerList 真实值，不做任何清零
 
-    for (let round = 0; round < MAX_UPCOMING; round++) {
-      // 推演时不传 courtMatches（视为空场），所有 active 选手均可用
-      // 用 excludeMatchup 避免与上一轮推演出的搭档组合完全相同（避免同组连续两场）
-      const excludeMatchup = round === 0 && courtMatchesData.length > 0
+    // 候场只推演本轮循环剩余场数（当前在场的这场结束后还剩几场）
+    const playedSoFar = matchResultsData.length + (courtMatchesData.length > 0 ? 1 : 0);
+    const playedInCycleNow = playedSoFar % (cycleGames || 1);
+    const maxUpcoming = cycleGames - playedInCycleNow;
+
+    for (let round = 0; round < maxUpcoming; round++) {
+      const excludeMatchup = round === 0 && hasCurrentMatch
         ? { teamAPlayerIds: courtMatchesData[0].teamAPlayerIds, teamBPlayerIds: courtMatchesData[0].teamBPlayerIds }
         : upcomingMatches.length > 0
           ? { teamAPlayerIds: upcomingMatches[upcomingMatches.length - 1].teamAPlayerIds, teamBPlayerIds: upcomingMatches[upcomingMatches.length - 1].teamBPlayerIds }
@@ -65,7 +121,7 @@ async function getLiveState(activityId) {
 
       const next = computeNextMatch(
         simulatedPlayers,
-        [], // 空场推演，所有人都可参与
+        [],
         simulatedResults,
         activity.handicapRules || [],
         excludeMatchup
@@ -76,10 +132,9 @@ async function getLiveState(activityId) {
         teamAPlayerIds: next.teamAPlayerIds,
         teamBPlayerIds: next.teamBPlayerIds,
         handicapTip: next.handicapTip,
-        isPreview: round === 0 && courtMatchesData.length > 0,
+        isPreview: round === 0 && hasCurrentMatch,
       });
 
-      // 推演：将这场加入模拟历史，更新模拟选手状态
       simulatedResults = [
         ...simulatedResults,
         { teamAPlayerIds: next.teamAPlayerIds, teamBPlayerIds: next.teamBPlayerIds },
@@ -109,8 +164,7 @@ async function getLiveState(activityId) {
     scoreB: r.scoreB,
   }));
   const playedCount = distinctMatchCount(matchResults);
-  const courtCount = activity.courtCount || 1;
-  const totalMatchesEstimate = courtCount * Math.ceil(activePlayerCount / 4) * 2;
+  const totalMatchesEstimate = courtCount * cycleGames;
   const remainingMatchesEstimate = Math.max(0, totalMatchesEstimate - playedCount);
   return {
     activity: activity.toJSON(),

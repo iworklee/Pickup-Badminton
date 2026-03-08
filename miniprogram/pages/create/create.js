@@ -101,7 +101,9 @@ Page({
       return;
     }
     const courtCount = Math.max(1, parseInt(this.data.courtCount, 10) || 1);
-    const totalEst = courtCount * Math.ceil(valid / 4) * 2;
+    // Round Robin 完整循环场数：4人=3场（3种搭档组合），N人(N≥5)=N场（每人恰好轮空一次）
+    const cycleGames = valid === 4 ? 3 : valid;
+    const totalEst = courtCount * cycleGames;
     const ok = await new Promise((resolve) => {
       wx.showModal({
         title: "开始活动",
